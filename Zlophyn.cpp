@@ -1,6 +1,3 @@
-// Zlophyn.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <Windows.h>
 #include <vector>
@@ -46,15 +43,15 @@ public:
         return result == ERROR_SUCCESS;
     }
 };
+
 class ShellStartupItem : public StartupItem {
 private:
-    std::wstring base;
+    std::wstring fullPath;
     std::wstring displayName;
 
 public:
-    ShellStartupItem(std::wstring base, WCHAR* fileName) {
-        this->displayName = fileName;
-        this->base = base;
+    ShellStartupItem(std::wstring base, WCHAR* fileName): displayName(fileName) {
+        this->fullPath = base + L"\\" + displayName; 
     }
 
     std::wstring GetDisplayName() {
@@ -62,13 +59,11 @@ public:
     }
 
     std::wstring GetStartupPath() {
-        return base + L"\\" + displayName;
+        return fullPath;
     }
 
     bool Delete() {
-        std::wstring filePath = base + L"\\" + displayName;
-
-        return DeleteFile(filePath.c_str()) != 0;
+        return DeleteFile(fullPath.c_str()) != 0;
     }
 };
 
@@ -136,7 +131,6 @@ static bool ScanShellStartup(std::vector<std::shared_ptr<StartupItem>>& startupI
 
     FindClose(hEntry);
 
-
     return true;
 }
 
@@ -144,9 +138,11 @@ static std::vector<std::string> SplitString(const std::string& s, char delimiter
     std::vector<std::string> tokens;
     std::istringstream iss(s);
     std::string token;
+
     while (std::getline(iss, token, delimiter)) {
         tokens.push_back(token);
     }
+
     return tokens;
 }
 
@@ -166,15 +162,14 @@ int main(void)
     }
 
     if (!ScanShellStartup(items)) {
-        std::cerr << "Error! Unable to scan for shell:startup entries.\n";
+        std::cerr << "Error! Unable to scan shell:startup for entries.\n";
         return 1;
     }
 
     std::cout << "Entries: " << "\n";
     
-
     for (std::size_t index = 0; index < items.size(); ++index) {
-        std::shared_ptr<StartupItem> item = items[index];
+        auto& item = items[index];
         std::wcout << "["  << index << "]" << " " << item->GetDisplayName() << ": " << item->GetStartupPath() << "\n";
     }
 
@@ -204,5 +199,7 @@ int main(void)
     std::cout << "Press any key to exit... ";
     std::cout.flush();
     (void) _getch();
+
+    return 0;
 }
 
